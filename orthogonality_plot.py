@@ -10,10 +10,10 @@ if __name__ == "__main__":
     print ("Loading data...")
 
     df = h5py.File("orthogonality.hdf5", mode = "r")
-    group1 = df["data_stage000"]
-    group2 = df["data_cam000"]
-    group3 = df["data_steps000"]
-    group4 = df["data_distance000"]
+    group1 = df["data_stage001"]
+    group2 = df["data_cam001"]
+    group3 = df["data_steps001"]
+    group4 = df["data_distance001"]
     dset1 = group1["data_stage00000"]
     dset2 = group2["data_cam00000"]
     dset3 = group3["data_steps00000"]
