@@ -48,7 +48,7 @@ if __name__ == "__main__":
 
     fig2, ax2 = plt.subplots(1, 1)
 
-    ax2.plot(dist[:] * 0.01, mean_error[:] * 2.16, "r-")
+    ax2.semilogx(dist[:] * 0.01, mean_error[:] * 2.16, "r-")
 
     ax2.set_xlabel('Move Distance [$\mathrm{\mu m}$]')
     ax2.set_ylabel('Error [$\mathrm{\mu m}$]')

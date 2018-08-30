@@ -21,12 +21,13 @@ if __name__ == "__main__":
 
     df = h5py.File("drift.hdf5", mode = "r")
     group = df.values()[-1]
-    data = np.zeros([N_frames * len(group), 3])
-    for i in range(len(group)):
+    N_points = len(group) - 1
+    data = np.zeros([N_frames * N_points, 3])
+    for i in range(N_points):
         dset = group["data%05d" % i]
         for j in range(N_frames):
             data[N_frames * i + j, :] = dset[j, :]
-        printProgressBar(i, len(group))
+        printProgressBar(i, N_points)
     print("")
 
     matplotlib.rcParams.update({'font.size': 8})
