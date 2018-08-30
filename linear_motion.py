@@ -17,9 +17,10 @@ from camera_stuff import find_template
 import threading
 import queue
 import cv2
+from linear_motion_plot import plot_txy
 
-def move_stage(step, event, stage, moves=[]):
-    while not event.wait(1):
+def move_stage(step, dwell_time, event, stage, moves=[]):
+    while not event.wait(dwell_time):
         moves.append([time.time(),] + list(stage.position))
         stage.move_rel(step)
         moves.append([time.time(),] + list(stage.position))
@@ -32,29 +33,30 @@ def printProgressBar(iteration, total, length = 10):
     if iteration == total: 
         print()
         
-def move_stage_and_record(step, N_frames, microscope, data_group, template):
+def move_stage_and_record(step, N_frames, microscope, data_group, template, dwell_time):
     # move the stage by a given step, recording motion as we go.
     ms = microscope
     data_group.attrs['step'] = step
+    ms.camera.start_preview(resolution=(640,480))
     
     # we will use a RAM buffer to record a bunch of frames
     outputs = [io.BytesIO() for i in range(N_frames)]
     stop_moving_event = threading.Event()
     stage_moves = []
-    movement_thread = threading.Thread(target = movement, 
-									   args = (step, stop_moving_event, ms.stage, stage_moves), 
-									   name = 'stage_movement_thread')
+    movement_thread = threading.Thread(target = move_stage, 
+                                       args = (step, dwell_time, stop_moving_event, ms.stage, stage_moves), 
+                                       name = 'stage_movement_thread')
     movement_thread.start()
-    print("Starting acquisition of {} frames, should take about {:.0}s.".format(N_frames, N_frames/js.camera.framerate))
+    print("Starting acquisition of {} frames, should take about {:.0}s.".format(N_frames, N_frames/ms.camera.framerate))
     try:
         start_t = time.time()
         camera.capture_sequence(outputs, 'jpeg', use_video_port=True)
         end_t = time.time()
     finally:
-        stop_moving_event.set()
-        t.join()
-        
         print ("Stopping...")
+        stop_moving_event.set()
+        movement_thread.join()
+        ms.camera.stop_preview()
 
     print("Recorded {} frames in {} seconds ({} fps)".format(N_frames, end_t - start_t, N_frames / (end_t - start_t)))
     print("Camera framerate was set to {}, and reports as {}".format(framerate, camera.framerate))
@@ -83,28 +85,32 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Perform a linear motion test on an Openflexure Microscope")
     parser.add_argument("step", type=int, nargs=3, help="The displacement between each point, in steps")
     parser.add_argument("--n_frames", type=int, default=2000, help="The number of frames to record for each run")
-    parser.add_argument("--n_repeats", type=int, default=5, help="How many there-and-back round trips to do")
+    parser.add_argument("--n_repeats", type=int, default=1, help="How many there-and-back round trips to do")
+    parser.add_argument("--framerate", type=int, default=90, help="Rate at which to run the camera (frames/second)")
+    parser.add_argument("--dwell_time", type=float, default=1.0, help="Time (in seconds) to wait at each point")
     parser.add_argument("--return_to_start", dest="return_to_start", action="store_true", help="Return to the origin at the beginning of each run")
     parser.add_argument("--output", help="HDF5 file to save to", default="linear_motion.h5")
     parser.add_argument("--settings_file", help="File where the microscope settings are stored.", default="microscope_settings.npz")
     args = parser.parse_args()
 
-    with load_microscope("args['settings_file']", dummy_stage = False) as ms, \
-         closing(data_file.Datafile(filename = args['output'])) as df:
+    with load_microscope(args.settings_file, dummy_stage = False) as ms, \
+         closing(data_file.Datafile(filename = args.output)) as df:
 
         assert picamera_supports_lens_shading(), "You need the updated picamera module with lens shading!"
 
         camera = ms.camera
         stage = ms.stage
 
-        N_frames = args['n_frames']
-        N_repeats = args['n_repeats']
-        step = args['step']
-        framerate = 100
+        N_frames = args.n_frames
+        N_repeats = args.n_repeats
+        step = args.step
+        framerate = args.framerate
+        dwell_time = args.dwell_time
         backlash = 256
-        return_to_start = args['return_to_start']
+        return_to_start = args.return_to_start
 
         camera.resolution=(640,480)
+        camera.zoom=(0,0,1,1)
         camera.framerate = framerate
         stage.backlash = backlash
 
@@ -120,8 +126,8 @@ if __name__ == "__main__":
         output_group['template_image'] = template
         output_group['sample_image'] = ms.rgb_image()
         output_group.attrs['step'] = step
-        output_group.attrs['n_repeats'] = n_repeats
-        output_group.attrs['n_frames'] = n_frames
+        output_group.attrs['n_repeats'] = N_repeats
+        output_group.attrs['n_frames'] = N_frames
         output_group.attrs['requested_framerate'] = framerate
         output_group.attrs['backlash'] = backlash
         output_group.attrs['return_to_start'] = return_to_start
@@ -133,7 +139,9 @@ if __name__ == "__main__":
                 # NB backlash correction should kick in automatically when this move happens if needed
                 stage.move_abs(initial_stage_position)
             g = output_group.create_group("sequence_{:05}".format(i))
-            move_stage_and_record(step, N_frames, ms, g, template)
+            move_stage_and_record(step, N_frames, ms, g, template, dwell_time)
+            plot_txy(g['camera_motion'])
             
         stage.move_abs(initial_stage_position)
         camera.stop_preview()
+    plt.show()
