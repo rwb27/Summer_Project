@@ -84,6 +84,7 @@ if __name__ == "__main__":
     parser.add_argument("step", type=int, nargs=3, help="The displacement between each point, in steps")
     parser.add_argument("--n_frames", type=int, default=2000, help="The number of frames to record for each run")
     parser.add_argument("--n_repeats", type=int, default=5, help="How many there-and-back round trips to do")
+    parser.add_argument("--return_to_start", dest="return_to_start", action="store_true", help="Return to the origin at the beginning of each run")
     parser.add_argument("--output", help="HDF5 file to save to", default="linear_motion.h5")
     parser.add_argument("--settings_file", help="File where the microscope settings are stored.", default="microscope_settings.npz")
     args = parser.parse_args()
@@ -101,6 +102,7 @@ if __name__ == "__main__":
         step = args['step']
         framerate = 100
         backlash = 256
+        return_to_start = args['return_to_start']
 
         camera.resolution=(640,480)
         camera.framerate = framerate
@@ -108,9 +110,6 @@ if __name__ == "__main__":
 
         camera.start_preview(resolution=(640,480))
         initial_stage_position = stage.position
-
-        stage.move_rel([-backlash, -backlash, -backlash])
-        stage.move_rel([backlash, backlash, backlash])
 
         image = ms.rgb_image().astype(np.float32)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -125,8 +124,14 @@ if __name__ == "__main__":
         output_group.attrs['n_frames'] = n_frames
         output_group.attrs['requested_framerate'] = framerate
         output_group.attrs['backlash'] = backlash
+        output_group.attrs['return_to_start'] = return_to_start
         
-        for i, d in enumerate([1, -1] * N_repeats): # move back and forth 5 times
+        # (fairly basic) backlash correction: we'll approach the starting point from the right direction
+        stage.move_rel([-backlash, -backlash, -backlash])
+        for i in range(N_repeats): # move back and forth 5 times
+            if i==0 or return_to_start:
+                # NB backlash correction should kick in automatically when this move happens if needed
+                stage.move_abs(initial_stage_position)
             g = output_group.create_group("sequence_{:05}".format(i))
             move_stage_and_record(step, N_frames, ms, g, template)
             
