@@ -57,6 +57,8 @@ if __name__ == "__main__":
         image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         mean = np.mean(image)
         templ8 = (image - mean)[100:-100, 100:-100]
+        cam_pos['template'] = templ8
+        cam_pos['initial_image'] = image
 
         q = queue.Queue()
         event = threading.Event()
