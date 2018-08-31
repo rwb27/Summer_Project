@@ -18,7 +18,7 @@ if __name__ == "__main__":
     mean_error = np.zeros(n)
     for i in range(n):
         dset = group["distance%03d" % i] #distances
-        m = len(dset)
+        m = len(dset) - 2
         diff = np.zeros([m, 2])
         move = np.zeros([m, 3])
         for j in range(m):

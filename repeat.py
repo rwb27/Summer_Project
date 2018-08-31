@@ -64,7 +64,7 @@ if __name__ == "__main__":
         
         experiment_group = df.new_group("repeatability", "Repeatability measurements for different distances in each group")
 
-        for dist in [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192]:
+        for dist in [2**i for i in range(6,14)]:
             data_gr = df.new_group("distance", "Repeatability measurements, moving the stage away and back again", parent=experiment_group)
             data_gr.attrs['move_distance'] = dist
 
@@ -72,6 +72,8 @@ if __name__ == "__main__":
             image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
             mean = np.mean(image)
             templ8 = (image - mean)[100:-100, 100:-100]
+            data_gr['template_image'] = templ8
+            data_gr['sample_image'] = image
 
             start_t = time.time()
 
