@@ -34,7 +34,7 @@ def measure_txy(start_t, ms, templ8):
 
 def random_point(move_dist):
     angle = random.randrange(0, 360) * np.pi / 180
-    vector = np.array([move_dist * np.cos(angle), 0, move_dist * np.sin(angle)])
+    vector = np.array([move_dist * np.cos(angle), move_dist * np.sin(angle), 0])
     vector = np.rint(vector)
     return vector
 
@@ -53,7 +53,7 @@ if __name__ == "__main__":
         camera.resolution=(640,480)
         stage.backlash = backlash
 
-        n_moves = 10
+        n_moves = 20
 
         camera.start_preview(resolution=(640,480))
         
