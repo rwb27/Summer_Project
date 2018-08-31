@@ -11,6 +11,8 @@ if __name__ == "__main__":
 
     df = h5py.File("repeat.hdf5", mode = "r")
     group = df.values()[-1]
+    microns_per_pixel = 0.109 * 3280/640
+    
     n = len(group)
     pdf = PdfPages("repeatability{}.pdf".format(group.name.replace("/","_")))
 
@@ -36,7 +38,7 @@ if __name__ == "__main__":
         mean_error[i] = np.mean(error, axis = 0)
 
         fig, ax = plt.subplots(1, 1)
-        ax.plot(diff[:, 0] * 2.16, diff[:, 1] * 2.16, "+")
+        ax.plot(diff[:, 0] * microns_per_pixel, diff[:, 1] * microns_per_pixel, "+")
         ax.spines['left'].set_position('zero')
         ax.spines['right'].set_color('none')
         ax.spines['bottom'].set_position('zero')

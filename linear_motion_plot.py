@@ -46,12 +46,12 @@ def plot_txy(dset, microns_per_pixel=2.16):
     return fig, ax
 
 if __name__ == "__main__":
-    print ("Loading data...")
-
-    df = h5py.File("precision.hdf5", mode = "r")
-    with PdfPages("precision_all.pdf") as pdf:
-        for group in df.values():
-
-
-            pdf.savefig(fig)
-            plt.close(fig)
+    df = h5py.File("linear_motion.h5", mode = "r")
+    experiment = df.values()[-1]
+    with PdfPages("linear_all.pdf") as pdf:
+        for group in experiment.values():
+            if "sequence" in group.name:
+                fig, ax = plot_txy(group['camera_motion'])
+                pdf.savefig(fig)
+                plt.close(fig)
+    df.close()
