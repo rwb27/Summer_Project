@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import h5py
 import matplotlib
+from matplotlib.backends.backend_pdf import PdfPages
 
 if __name__ == "__main__":
     print ("Loading data...")
@@ -11,6 +12,7 @@ if __name__ == "__main__":
     df = h5py.File("repeat.hdf5", mode = "r")
     group = df.values()[-1]
     n = len(group)
+    pdf = PdfPages("repeatability{}.pdf".format(group.name.replace("/","_")))
 
     dist = np.zeros(n)
     mean_error = np.zeros(n)
@@ -44,7 +46,7 @@ if __name__ == "__main__":
         plt.xlabel('X Position [$\mathrm{\mu m}$]', horizontalalignment = 'right', x = 1.0)
         plt.ylabel('Y Position [$\mathrm{\mu m}$]', horizontalalignment = 'right', y = 1.0)
         
-        plt.savefig("repeat_%d.pdf" % i, bbox_inches='tight', dpi=180)
+        pdf.savefig(fig, bbox_inches='tight', dpi=180)
 
     fig2, ax2 = plt.subplots(1, 1)
 
@@ -52,6 +54,7 @@ if __name__ == "__main__":
 
     ax2.set_xlabel('Move Distance [$\mathrm{\mu m}$]')
     ax2.set_ylabel('Error [$\mathrm{\mu m}$]')
-    plt.savefig("repeatability.pdf", bbox_inches='tight', dpi=180)
+    pdf.savefig(fig2, bbox_inches='tight', dpi=180)
 
-    plt.show()
+    pdf.close()
+
