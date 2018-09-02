@@ -140,8 +140,8 @@ if __name__ == "__main__":
                 stage.move_abs(initial_stage_position)
             g = output_group.create_group("sequence_{:05}".format(i))
             move_stage_and_record(step, N_frames, ms, g, template, dwell_time)
-            plot_txy(g['camera_motion'])
+            #plot_txy(g['camera_motion'])
             
         stage.move_abs(initial_stage_position)
         camera.stop_preview()
-    plt.show()
+    #plt.show()
